@@ -3,7 +3,7 @@
 ```lua
 getgenv().config = {
     ["accounts"] = { -- Exact Username(s)
-        ["account username"] = "account cookie",
+        ["account username 1"] = "account cookie 1",
         ["account username 2"] = "account cookie 2"
     },
     ["cooldown"] = 10,   -- Cooldown Between Checking For Fake Bots
