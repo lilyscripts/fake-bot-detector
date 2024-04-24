@@ -1,3 +1,10 @@
+--[[
+
+made by lilyscripts
+https://discord.gg/FFjX2K47NR
+
+]]
+
 --// Checks
 
 assert(config, "you need a valid configuration to run this script! please check the docs again.")
