@@ -13,7 +13,7 @@ assert(config.cooldown, "no cooldown set in configuration...")
 assert(config.webhook, "no webhook set in configuration...")
 assert(config.blockedUsers, "no blocked users set in configuration...")
 assert(config.blockedRegexes, "no blocked regexes set in configuration...")
-assert((config.debug == nil), "no debug set in configuration...")
+assert((config.debug ~= nil), "no debug set in configuration...")
 
 --// Initialization
 
