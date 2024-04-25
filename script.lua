@@ -5,6 +5,27 @@ https://discord.gg/FFjX2K47NR
 
 ]]
 
+--// Configuration
+
+getgenv().config = {
+    ["accounts"] = { -- Exact Username(s)
+        ["account username"] = "account cookie",
+        ["account username 2"] = "account cookie 2"
+    },
+    ["cooldown"] = 10,      -- Cooldown Between Checking For Fake Bots
+    ["webhook"] = "",       -- Webhook Notifier (Set To "" If You Don't Want It)
+    ["levenshtein"] = true, -- Detects Similar Usernames To Those In Blocked Users (Advanced, Recommended)
+    ["blockedUsers"] = {    -- Blocked Usernames / Display Names
+        "username 1",
+        "display name 1",
+    },
+    ["blockedRegexes"] = { -- Blocked Username / Display Name Regexes (Advanced, Recommended)
+        "regex 1",
+        "regex 2"
+    },
+    ["debug"] = false -- For Development Purposes
+}
+
 --// Checks
 
 assert(config, "you need a valid configuration to run this script! please check the docs again.")
@@ -13,14 +34,23 @@ assert(config.cooldown, "no cooldown set in configuration...")
 assert(config.webhook, "no webhook set in configuration...")
 assert(config.blockedUsers, "no blocked users set in configuration...")
 assert(config.blockedRegexes, "no blocked regexes set in configuration...")
-assert((config.debug ~= nil), "no debug set in configuration...")
+assert((config.debug == nil), "no debug set in configuration...")
+assert((config.accounts[game.Players.LocalPlayer.Name]),
+    "no current account found, make sure the usernames in getgenv().config.accounts are exact.")
+
+--// Config Modifications
+
+for index, value in next, config.blockedUsers do
+    config.blockedUsers[index] = string.lower(value)
+end
 
 --// Initialization
 
 local players = game:GetService("Players")
-local httpService = game:GetService("HttpService")
-
 local localPlayer = players.LocalPlayer
+
+local webhookBuilder = loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/lilyscripts/webhook-builder/main/webhookBuilder.lua"))()
 
 --// Main Script
 
@@ -45,21 +75,9 @@ end
 -- Sends A Webhook Notification
 local function sendMessage(message)
     if ((config.webhook) and (config.webhook ~= "")) then
-        local discordRequest = request({
-            Url = config.webhook,
-            Method = "POST",
-            Body = httpService:JSONEncode({
-                ["content"] = message
-            }),
-            Headers = {
-                ["Content-Type"] = "application/json"
-            }
-        })
-
-        if (config.debug) then
-            print("Sent Discord Message - " .. message)
-            print("Discord Message Status Code - " .. tostring(discordRequest.StatusCode))
-        end
+        local discordWebhook = webhookBuilder(config.webhook)
+        discordWebhook:setContent(message)
+        discordWebhook:send()
     end
 end
 
@@ -125,25 +143,73 @@ local function unblockUser(player, cookie, csrfToken)
     end
 end
 
+-- Levenshtein Distance Function (Credit - Max9598)
+local function checkDistance(usernameOne, usernameTwo)
+    local usernameOneLength = string.len(usernameOne)
+    local usernameTwoLength = string.len(usernameTwo)
+    local matrix = {}
+    local cost = 0
+
+    if (usernameOneLength == 0) then
+        return usernameTwoLength
+    elseif (usernameTwoLength == 0) then
+        return usernameOneLength
+    elseif (usernameOne == usernameTwo) then
+        return 0
+    end
+
+    for i = 0, usernameOneLength, 1 do
+        matrix[i] = {}
+        matrix[i][0] = i
+    end
+
+    for j = 0, usernameTwoLength, 1 do
+        matrix[0][j] = j
+    end
+
+    for i = 1, usernameOneLength, 1 do
+        for j = 1, usernameTwoLength, 1 do
+            if (usernameOne:byte(i) == usernameTwo:byte(j)) then
+                cost = 0
+            else
+                cost = 1
+            end
+            matrix[i][j] = math.min(matrix[i - 1][j] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j - 1] + cost)
+        end
+    end
+
+    return ((usernameTwo:lower():find(usernameOne:lower()) and true) or (matrix[usernameOneLength][usernameTwoLength] <= 3 and usernameTwoLength - usernameOneLength <= 4)) and
+        "fake" or "real"
+end
+
 -- Scans For Fake Bots
 local function checkUsers()
     for _, player in next, players:GetPlayers() do
-        local illegalRegex = false
+        local illegalName = false
         local playerName = string.lower(player.Name)
         local playerDisplayName = string.lower(player.DisplayName)
+        local localPlayerName = string.lower(localPlayer.Name)
+        local localPlayerDisplayName = string.lower(localPlayer.DisplayName)
 
         for _, regex in next, config.blockedRegexes do
             if ((string.match(playerName, regex)) or (string.match(playerDisplayName, regex))) then
-                illegalRegex = true
+                illegalName = true
             end
         end
 
+        if (table.find(config.blockedUsers, playerName)) or (table.find(config.blockedUsers, playerDisplayName)) then
+            illegalName = true
+        end
+
         if
-            ((table.find(config.blockedUsers, playerName)) or
-                (table.find(config.blockedUsers, playerDisplayName)) or
-                (illegalRegex)) and
-            (playerName ~= string.lower(localPlayer.Name))
-        then
+            (checkDistance(playerName, localPlayerName) == "fake") or
+            (checkDistance(playerName, localPlayerDisplayName) == "fake") or
+            (checkDistance(playerDisplayName, localPlayerName) == "fake") or
+            (checkDistance(playerDisplayName, localPlayerDisplayName) == "fake") then
+            illegalName = true
+        end
+
+        if (illegalName) then
             spawn(function()
                 if (config.debug) then
                     print("Found User - " .. player.name)
