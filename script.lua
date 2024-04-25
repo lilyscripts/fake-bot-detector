@@ -5,27 +5,6 @@ https://discord.gg/FFjX2K47NR
 
 ]]
 
---// Configuration
-
-getgenv().config = {
-    ["accounts"] = { -- Exact Username(s)
-        ["account username"] = "account cookie",
-        ["account username 2"] = "account cookie 2"
-    },
-    ["cooldown"] = 10,      -- Cooldown Between Checking For Fake Bots
-    ["webhook"] = "",       -- Webhook Notifier (Set To "" If You Don't Want It)
-    ["levenshtein"] = true, -- Detects Similar Usernames To Those In Blocked Users (Advanced, Recommended)
-    ["blockedUsers"] = {    -- Blocked Usernames / Display Names
-        "username 1",
-        "display name 1",
-    },
-    ["blockedRegexes"] = { -- Blocked Username / Display Name Regexes (Advanced, Recommended)
-        "regex 1",
-        "regex 2"
-    },
-    ["debug"] = false -- For Development Purposes
-}
-
 --// Checks
 
 assert(config, "you need a valid configuration to run this script! please check the docs again.")
