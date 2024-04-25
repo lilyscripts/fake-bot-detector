@@ -32,6 +32,7 @@ assert(config, "you need a valid configuration to run this script! please check 
 assert(config.accounts, "no accounts set in configuration...")
 assert(config.cooldown, "no cooldown set in configuration...")
 assert(config.webhook, "no webhook set in configuration...")
+assert((config.levenshtein == nil), "no levenshtein set in configuration...")
 assert(config.blockedUsers, "no blocked users set in configuration...")
 assert(config.blockedRegexes, "no blocked regexes set in configuration...")
 assert((config.debug == nil), "no debug set in configuration...")
@@ -201,12 +202,14 @@ local function checkUsers()
             illegalName = true
         end
 
-        if
-            (checkDistance(playerName, localPlayerName) == "fake") or
-            (checkDistance(playerName, localPlayerDisplayName) == "fake") or
-            (checkDistance(playerDisplayName, localPlayerName) == "fake") or
-            (checkDistance(playerDisplayName, localPlayerDisplayName) == "fake") then
-            illegalName = true
+        if (config.levenshtein) then
+            if
+                (checkDistance(playerName, localPlayerName) == "fake") or
+                (checkDistance(playerName, localPlayerDisplayName) == "fake") or
+                (checkDistance(playerDisplayName, localPlayerName) == "fake") or
+                (checkDistance(playerDisplayName, localPlayerDisplayName) == "fake") then
+                illegalName = true
+            end
         end
 
         if (illegalName) then
